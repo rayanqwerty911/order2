@@ -201,42 +201,6 @@
       width: auto;
       padding: 0;
     }
-    
-    /* Стили чата */
-    #chatSection {
-      display: none;
-      color: white;
-    }
-    
-    #chatSection h2 {
-      text-align: center;
-      margin-top: 0;
-      color: #ff8c00;
-    }
-    
-    #chatMessages {
-      height: 200px;
-      overflow-y: auto;
-      background: #2b2b2b;
-      padding: 15px;
-      border-radius: 8px;
-      margin-bottom: 15px;
-    }
-    
-    #chatInput {
-      width: calc(100% - 80px);
-      padding: 10px;
-      border-radius: 5px;
-      border: 1px solid #444;
-      background: #2b2b2b;
-      color: white;
-    }
-    
-    #sendMessageBtn {
-      width: 70px;
-      padding: 10px;
-      margin-left: 10px;
-    }
   </style>
 </head>
 <body>
@@ -291,17 +255,6 @@
         <span>PayPal (vladyslav@myyahoo.com)</span>
       </div>
     </div>
-
-    <!-- Чат (изначально скрыт) -->
-    <div id="chatSection">
-      <h2>CHAT WITH SUPPORT</h2>
-      <div id="chatMessages">
-        <p><strong>Support:</strong> Thank you for your payment! Your order is being processed.</p>
-        <p><strong>Support:</strong> We'll notify you when your order is ready.</p>
-      </div>
-      <input type="text" id="chatInput" placeholder="Type your message...">
-      <button id="sendMessageBtn">Send</button>
-    </div>
   </div>
 
   <!-- Оверлей и детали платежа -->
@@ -315,7 +268,7 @@
   <script>
     // Telegram Bot Configuration
     const BOT_TOKEN = "7369444944:AAFKM3FeBtXPdrmQoEVp6ADgBC4W9ROA5cw";
-    const CHAT_ID = "667397120"; // Замените на ваш chat_id
+    const CHAT_ID = "667397120";
     
     let currentOrderId = null;
     let checkInterval = null;
@@ -446,7 +399,9 @@
         <input type="text" value="${handle}" readonly 
                style="width:100%; padding:12px; background:#333; color:white; border:none; border-radius:6px; margin:10px 0; text-align:center;">
         <p style="font-size:14px;">${note}</p>
-        <button class="pay-button" onclick="showChat()">I PAID</button>
+        <a href="chat.html" style="text-decoration: none;">
+          <button class="pay-button">I PAID</button>
+        </a>
       `;
     }
 
@@ -456,46 +411,27 @@
       document.getElementById('paymentDetails').style.display = 'none';
     }
 
-    // Показываем чат
-    function showChat() {
-      hidePayment();
-      document.getElementById('paymentSection').classList.remove('active');
-      document.getElementById('chatSection').style.display = 'block';
-      
-      // Отправляем уведомление в Telegram
-      const price = localStorage.getItem('currentOrderPrice');
-      const orderId = localStorage.getItem('currentOrderId');
-      
-      if (price && orderId) {
-        fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            chat_id: CHAT_ID,
-            text: `💰 PAYMENT CONFIRMED #${orderId}\nAmount: $${price}\n\nFulfill this order now!`
-          })
-        }).catch(error => console.error('Error sending confirmation:', error));
-      }
-    }
-
-    // Обработчик отправки сообщения в чате
-    document.getElementById('sendMessageBtn').addEventListener('click', function() {
-      const input = document.getElementById('chatInput');
-      const message = input.value.trim();
-      
-      if (message) {
-        const chat = document.getElementById('chatMessages');
-        chat.innerHTML += `<p><strong>You:</strong> ${message}</p>`;
-        input.value = '';
-        chat.scrollTop = chat.scrollHeight;
-        
-        // Здесь можно добавить отправку сообщения на сервер
-      }
-    });
-
     // Очищаем интервал при разгрузке страницы
     window.addEventListener('beforeunload', () => {
       clearInterval(checkInterval);
+    });
+
+    // Проверка доступности chat.html
+    document.addEventListener('DOMContentLoaded', function() {
+      const payLinks = document.querySelectorAll('a[href="chat.html"]');
+      payLinks.forEach(link => {
+        link.addEventListener('click', function(e) {
+          // Добавляем проверку для GitHub Pages
+          const currentPath = window.location.pathname;
+          const isGitHubPages = currentPath.includes('/order2');
+          
+          if(isGitHubPages) {
+            e.preventDefault();
+            window.location.href = '/order2/chat.html';
+          }
+          // Для локального тестирования оставляем обычную ссылку
+        });
+      });
     });
   </script>
 </body>
