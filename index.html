@@ -90,6 +90,14 @@
       cursor: not-allowed;
     }
     
+    .pay-button {
+      background: #28a745;
+    }
+    
+    .pay-button:hover {
+      background: #218838;
+    }
+    
     /* Анимация загрузки */
     .loader {
       border: 4px solid rgba(43, 43, 43, 0.2);
@@ -193,6 +201,42 @@
       width: auto;
       padding: 0;
     }
+    
+    /* Стили чата */
+    #chatSection {
+      display: none;
+      color: white;
+    }
+    
+    #chatSection h2 {
+      text-align: center;
+      margin-top: 0;
+      color: #ff8c00;
+    }
+    
+    #chatMessages {
+      height: 200px;
+      overflow-y: auto;
+      background: #2b2b2b;
+      padding: 15px;
+      border-radius: 8px;
+      margin-bottom: 15px;
+    }
+    
+    #chatInput {
+      width: calc(100% - 80px);
+      padding: 10px;
+      border-radius: 5px;
+      border: 1px solid #444;
+      background: #2b2b2b;
+      color: white;
+    }
+    
+    #sendMessageBtn {
+      width: 70px;
+      padding: 10px;
+      margin-left: 10px;
+    }
   </style>
 </head>
 <body>
@@ -246,6 +290,17 @@
         <img src="https://logo.clearbit.com/paypal.com" alt="PayPal">
         <span>PayPal (vladyslav@myyahoo.com)</span>
       </div>
+    </div>
+
+    <!-- Чат (изначально скрыт) -->
+    <div id="chatSection">
+      <h2>CHAT WITH SUPPORT</h2>
+      <div id="chatMessages">
+        <p><strong>Support:</strong> Thank you for your payment! Your order is being processed.</p>
+        <p><strong>Support:</strong> We'll notify you when your order is ready.</p>
+      </div>
+      <input type="text" id="chatInput" placeholder="Type your message...">
+      <button id="sendMessageBtn">Send</button>
     </div>
   </div>
 
@@ -391,11 +446,7 @@
         <input type="text" value="${handle}" readonly 
                style="width:100%; padding:12px; background:#333; color:white; border:none; border-radius:6px; margin:10px 0; text-align:center;">
         <p style="font-size:14px;">${note}</p>
-        <button onclick="completePayment()" 
-                style="width:100%; padding:12px; background:#28a745; color:white; border:none; border-radius:6px; font-weight:bold; margin-top:15px; cursor:pointer;">
-          <span id="confirmText">CONFIRM PAYMENT</span>
-          <span id="loadingSpinner" style="display:none;"><span class="mini-loader"></span> Processing...</span>
-        </button>
+        <button class="pay-button" onclick="showChat()">I PAID</button>
       `;
     }
 
@@ -405,51 +456,42 @@
       document.getElementById('paymentDetails').style.display = 'none';
     }
 
-    // Подтверждение оплаты
-    async function completePayment() {
+    // Показываем чат
+    function showChat() {
+      hidePayment();
+      document.getElementById('paymentSection').classList.remove('active');
+      document.getElementById('chatSection').style.display = 'block';
+      
+      // Отправляем уведомление в Telegram
       const price = localStorage.getItem('currentOrderPrice');
       const orderId = localStorage.getItem('currentOrderId');
-
-      if (!price || !orderId) {
-        alert('❌ Order data missing. Please restart the process.');
-        return;
-      }
-
-      const btn = document.querySelector('#paymentDetails button');
-      const confirmText = document.getElementById('confirmText');
-      const loadingSpinner = document.getElementById('loadingSpinner');
       
-      btn.disabled = true;
-      confirmText.style.display = 'none';
-      loadingSpinner.style.display = 'inline';
-
-      try {
-        const response = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+      if (price && orderId) {
+        fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             chat_id: CHAT_ID,
             text: `💰 PAYMENT CONFIRMED #${orderId}\nAmount: $${price}\n\nFulfill this order now!`
           })
-        });
-
-        if (!response.ok) throw new Error('Telegram API error');
-        
-        alert('✅ Thank you! Your order will be processed within 15 minutes.');
-        localStorage.removeItem('currentOrderPrice');
-        localStorage.removeItem('currentOrderId');
-        setTimeout(() => { window.location.href = '/'; }, 1500);
-      } catch (error) {
-        console.error('Payment confirmation error:', error);
-        alert('⚠️ Confirmation failed. Please contact @xvldg on Telegram');
-        btn.innerHTML = 'Try Again';
-        btn.style.backgroundColor = '#dc3545';
-      } finally {
-        btn.disabled = false;
-        confirmText.style.display = 'inline';
-        loadingSpinner.style.display = 'none';
+        }).catch(error => console.error('Error sending confirmation:', error));
       }
     }
+
+    // Обработчик отправки сообщения в чате
+    document.getElementById('sendMessageBtn').addEventListener('click', function() {
+      const input = document.getElementById('chatInput');
+      const message = input.value.trim();
+      
+      if (message) {
+        const chat = document.getElementById('chatMessages');
+        chat.innerHTML += `<p><strong>You:</strong> ${message}</p>`;
+        input.value = '';
+        chat.scrollTop = chat.scrollHeight;
+        
+        // Здесь можно добавить отправку сообщения на сервер
+      }
+    });
 
     // Очищаем интервал при разгрузке страницы
     window.addEventListener('beforeunload', () => {
