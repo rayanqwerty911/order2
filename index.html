@@ -279,12 +279,28 @@
       document.getElementById("stepIndicator").textContent = `STEP ${stepMap.indexOf(toStep) + 1}/4`;
     }
 
+    function isValidUberEatsGroupLink(link) {
+      try {
+        const url = new URL(link);
+        return (
+          (url.hostname === 'eats.uber.com' || 
+           url.hostname === 'www.eats.uber.com') &&
+          url.pathname.startsWith('/group-orders/') &&
+          url.pathname.split('/').length >= 3
+        );
+      } catch (e) {
+        return false;
+      }
+    }
+
     async function checkOrder() {
       const link = document.getElementById("orderLink").value.trim();
-      if (!link.includes("ubereats.com")) {
-        alert("Enter valid Uber Eats group order link.");
+      
+      if (!isValidUberEatsGroupLink(link)) {
+        alert("Please enter a valid Uber Eats group order link.\nExample: https://eats.uber.com/group-orders/xxx");
         return;
       }
+      
       switchStep("step2");
       currentOrderId = "order_" + Math.random().toString(36).substr(2, 8);
 
